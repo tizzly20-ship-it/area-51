@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misteri Area 51: Fakta dan Fiksi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Desert Noir -->
+    <!-- Application Structure Plan: A thematic, single-page scrolling application with a top navigation bar for quick access. The structure progresses from official facts to popular theories, using interactive toggles (Fact vs. Fiction), a clickable timeline, and explorable 'alien profile' cards to guide the user through the complex lore of Area 51. This non-linear, exploratory structure is chosen over a simple linear report to engage user curiosity and allow them to compare different narratives at their own pace, which is ideal for a topic blending reality and myth. -->
+    <!-- Visualization & Content Choices:
+    - Report Info: Official Purpose vs. UFO Theories -> Goal: Compare -> Method: Toggled text blocks -> Interaction: Buttons to switch views -> Justification: Allows direct comparison of conflicting narratives. Method: JS DOM manipulation.
+    - Report Info: Historical Events (Roswell, Lazar) -> Goal: Organize -> Method: Vertical Timeline -> Interaction: Click event to show details in a modal -> Justification: Presents history chronologically and interactively. Method: HTML/CSS + JS Modal.
+    - Report Info: Alleged Alien Species -> Goal: Inform (speculatively) -> Method: Grid of info cards -> Interaction: Click card to reveal 'classified' profile modal -> Justification: Gamifies exploration of speculative content. Method: HTML/CSS + JS Modal.
+    - Report Info: UFO Sightings Data -> Goal: Visualize trend -> Method: Line Chart -> Interaction: Hover for tooltips -> Justification: Provides a data-centric view on the phenomenon, adding a layer of perceived authenticity. Library: Chart.js. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF6;
+            color: #333D44;
+        }
+        h1, h2, h3 {
+            font-family: 'Roboto Mono', monospace;
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #C06C2E;
+            border-bottom-color: #C06C2E;
+        }
+        .btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .btn-primary {
+            background-color: #333D44;
+            color: #FDFBF6;
+        }
+        .btn-primary:hover {
+            background-color: #4A555E;
+        }
+        .btn-secondary {
+            background-color: #EAE8E3;
+            color: #333D44;
+        }
+        .btn-secondary.active {
+            background-color: #C06C2E;
+            color: #FFFFFF;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: #FFFFFF;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -31.5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #FDFBF6;
+            border: 4px solid #C06C2E;
+        }
+        #modal-backdrop.hidden {
+            display: none;
+        }
+        #modal.hidden {
+            display: none;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800">AREA 51</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#fakta-fiksi" class="nav-link">Fakta vs Fiksi</a>
+                <a href="#timeline" class="nav-link">Garis Waktu</a>
+                <a href="#penghuni" class="nav-link">'Penghuni'</a>
+                <a href="#data" class="nav-link">Data</a>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden text-gray-800">
+                <span class="text-2xl">☰</span>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden bg-white px-6 pb-4">
+            <a href="#fakta-fiksi" class="block py-2 text-gray-700">Fakta vs Fiksi</a>
+            <a href="#timeline" class="block py-2 text-gray-700">Garis Waktu</a>
+            <a href="#penghuni" class="block py-2 text-gray-700">'Penghuni'</a>
+            <a href="#data" class="block py-2 text-gray-700">Data</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <section id="hero" class="text-center mb-20">
+            <h2 class="text-4xl md:text-6xl font-bold mb-4 animate-fade-in-down">Di Balik Pagar Berduri</h2>
+            <p class="text-lg md:text-xl max-w-3xl mx-auto text-gray-600">Sebuah fasilitas militer rahasia di tengah gurun Nevada. Apa yang sebenarnya tersembunyi di Area 51? Mari kita telusuri batas antara kenyataan yang diakui dan misteri yang melegenda.</p>
+        </section>
+
+        <section id="fakta-fiksi" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold">Fakta vs Fiksi</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-2">Pemerintah AS mengakui keberadaannya, tetapi bungkam tentang tujuannya. Pilih salah satu untuk melihat dua sisi cerita yang sangat berbeda.</p>
+            </div>
+            <div class="flex justify-center space-x-4 mb-8">
+                <button id="fakta-btn" class="btn btn-secondary active px-6 py-2 rounded-full font-semibold">Fakta Resmi</button>
+                <button id="fiksi-btn" class="btn btn-secondary px-6 py-2 rounded-full font-semibold">Teori Populer</button>
+            </div>
+
+            <div id="fakta-content">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="text-center p-6 bg-white rounded-lg shadow-md">
+                         <div class="text-6xl mb-4">✈️</div>
+                         <h3 class="text-xl font-bold mb-2">Pengembangan Pesawat Rahasia</h3>
+                         <p>Secara resmi, Area 51 adalah detasemen dari Pangkalan Angkatan Udara Edwards. Tujuannya adalah untuk pengembangan dan pengujian pesawat eksperimental dan sistem persenjataan (black projects), seperti pesawat mata-mata U-2 dan SR-71 Blackbird.</p>
+                    </div>
+                    <div class="text-center p-6 bg-white rounded-lg shadow-md">
+                        <div class="text-6xl mb-4">⛔</div>
+                        <h3 class="text-xl font-bold mb-2">Zona Terlarang</h3>
+                        <p>Area ini sangat rahasia dengan keamanan super ketat. Ruang udaranya adalah yang paling terlarang di dunia. Siapa pun yang mencoba masuk tanpa izin akan menghadapi penangkapan, denda besar, bahkan penggunaan kekuatan mematikan.</p>
+                   </div>
+                </div>
+            </div>
+
+            <div id="fiksi-content" class="hidden">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div class="text-center p-6 bg-white rounded-lg shadow-md">
+                        <div class="text-6xl mb-4">👽</div>
+                        <h3 class="text-xl font-bold mb-2">Penyimpanan & Riset Alien</h3>
+                        <p>Teori paling populer menyebut Area 51 sebagai tempat penyimpanan bangkai pesawat UFO yang jatuh (terutama dari insiden Roswell) dan jasad alien. Para ilmuwan di sana diduga melakukan rekayasa balik teknologi luar angkasa.</p>
+                    </div>
+                    <div class="text-center p-6 bg-white rounded-lg shadow-md">
+                        <div class="text-6xl mb-4">🛸</div>
+                        <h3 class="text-xl font-bold mb-2">Kolaborasi Manusia-Alien</h3>
+                        <p>Beberapa teori yang lebih ekstrem mengklaim adanya perjanjian rahasia antara pemerintah AS dan ras alien. Manusia mendapatkan teknologi canggih, sementara alien diizinkan untuk melakukan eksperimen di Bumi dari basis mereka di Area 51.</p>
+                   </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="timeline" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Garis Waktu Misteri</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-2">Perjalanan Area 51 dari fasilitas tersembunyi menjadi ikon budaya pop global. Klik setiap peristiwa untuk detail lebih lanjut.</p>
+            </div>
+            <div class="relative max-w-2xl mx-auto border-l-2 border-gray-300 pl-10">
+                <div class="timeline-item mb-12 cursor-pointer" data-event="1947">
+                    <h3 class="text-lg font-bold text-C06C2E">1947: Insiden Roswell</h3>
+                    <p class="text-sm text-gray-600">Sebuah objek jatuh di Roswell, New Mexico. Militer menyebutnya balon cuaca, namun banyak yang percaya itu adalah UFO, yang kemudian dibawa ke Area 51.</p>
+                </div>
+                <div class="timeline-item mb-12 cursor-pointer" data-event="1955">
+                    <h3 class="text-lg font-bold text-C06C2E">1955: Pendirian Fasilitas</h3>
+                    <p class="text-sm text-gray-600">CIA mendirikan fasilitas di Groom Lake untuk program pesawat mata-mata U-2. Lokasi terpencilnya sempurna untuk kerahasiaan.</p>
+                </div>
+                <div class="timeline-item mb-12 cursor-pointer" data-event="1989">
+                    <h3 class="text-lg font-bold text-C06C2E">1989: Pengakuan Bob Lazar</h3>
+                    <p class="text-sm text-gray-600">Seorang pria bernama Bob Lazar mengklaim telah bekerja di Area 51 untuk merekayasa balik piring terbang alien, memicu gelombang baru minat publik.</p>
+                </div>
+                <div class="timeline-item cursor-pointer" data-event="2013">
+                    <h3 class="text-lg font-bold text-C06C2E">2013: Pengakuan Resmi CIA</h3>
+                    <p class="text-sm text-gray-600">Melalui deklasifikasi dokumen, CIA untuk pertama kalinya secara resmi mengakui keberadaan Area 51, meskipun hanya mengonfirmasi perannya sebagai fasilitas uji coba.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="penghuni" class="mb-20 scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Profil 'Penghuni'</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-2">Menurut para ahli teori konspirasi, ini adalah beberapa spesies yang diduga menghuni atau diteliti di dalam fasilitas bawah tanah Area 51. Klik kartu untuk membuka 'berkas rahasia'.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="card p-6 rounded-lg shadow-md text-center cursor-pointer" data-alien="grey">
+                    <div class="text-6xl mb-4">👁️</div>
+                    <h3 class="text-xl font-bold">The Greys</h3>
+                    <p class="text-gray-600">Makhluk humanoid kecil dengan kulit abu-abu, kepala besar, dan mata hitam besar. Paling sering dikaitkan dengan penculikan alien.</p>
+                </div>
+                <div class="card p-6 rounded-lg shadow-md text-center cursor-pointer" data-alien="reptilian">
+                    <div class="text-6xl mb-4">🦎</div>
+                    <h3 class="text-xl font-bold">The Reptilians</h3>
+                    <p class="text-gray-600">Alien reptil pengubah bentuk yang diyakini secara diam-diam mengendalikan pemerintah dan institusi manusia.</p>
+                </div>
+                <div class="card p-6 rounded-lg shadow-md text-center cursor-pointer" data-alien="nordic">
+                    <div class="text-6xl mb-4">👱</div>
+                    <h3 class="text-xl font-bold">The Nordics</h3>
+                    <p class="text-gray-600">Humanoid tinggi, berambut pirang, dan bermata biru. Dianggap sebagai spesies yang baik hati dan peduli terhadap kemanusiaan.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="data" class="scroll-mt-20">
+             <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold">Data Penampakan UFO</h2>
+                <p class="max-w-2xl mx-auto text-gray-600 mt-2">Visualisasi laporan penampakan UFO di Amerika Serikat selama beberapa dekade terakhir. Apakah ada korelasi dengan aktivitas di Area 51? Data ini memberikan gambaran tentang fenomena yang lebih luas.</p>
+            </div>
+            <div class="bg-white p-4 md:p-8 rounded-lg shadow-lg">
+                <div class="chart-container">
+                    <canvas id="sightingsChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="text-center py-8 mt-12 bg-gray-100">
+        <p class="text-gray-600">Aplikasi Interaktif oleh Gemini. Informasi disajikan untuk tujuan eksplorasi dan hiburan.</p>
+    </footer>
+
+    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50"></div>
+    <div id="modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white w-11/12 md:max-w-2xl p-8 rounded-lg shadow-2xl hidden z-50">
+        <h3 id="modal-title" class="text-2xl font-bold mb-4 font-mono"></h3>
+        <p id="modal-content" class="text-gray-700"></p>
+        <button id="modal-close" class="absolute top-4 right-4 text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const faktaBtn = document.getElementById('fakta-btn');
+            const fiksiBtn = document.getElementById('fiksi-btn');
+            const faktaContent = document.getElementById('fakta-content');
+            const fiksiContent = document.getElementById('fiksi-content');
+
+            faktaBtn.addEventListener('click', () => {
+                faktaContent.classList.remove('hidden');
+                fiksiContent.classList.add('hidden');
+                faktaBtn.classList.add('active');
+                fiksiBtn.classList.remove('active');
+            });
+
+            fiksiBtn.addEventListener('click', () => {
+                fiksiContent.classList.remove('hidden');
+                faktaContent.classList.add('hidden');
+                fiksiBtn.classList.add('active');
+                faktaBtn.classList.remove('active');
+            });
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            const navLinks = document.querySelectorAll('header a[href^="#"]');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (!mobileMenu.classList.contains('hidden')) {
+                         mobileMenu.classList.add('hidden');
+                    }
+                })
+            })
+
+
+            const modalBackdrop = document.getElementById('modal-backdrop');
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            const modalClose = document.getElementById('modal-close');
+
+            const timelineData = {
+                '1947': { title: 'Insiden Roswell (1947)', content: 'Pada Juli 1947, sebuah objek terbang tak dikenal jatuh di peternakan dekat Roswell, New Mexico. Militer AS awalnya menyatakan menemukan "piring terbang", tetapi kemudian menarik pernyataan itu dan mengatakan itu adalah balon cuaca konvensional. Teori konspirasi mengklaim bangkai pesawat dan jasad alien dibawa ke fasilitas rahasia untuk dipelajari, yang kemudian diyakini adalah Area 51.' },
+                '1955': { title: 'Pendirian Fasilitas (1955)', content: 'CIA memilih lokasi terpencil di Nevada yang dikenal sebagai Groom Lake untuk program pesawat mata-mata U-2. Lokasi ini, yang kemudian dikenal sebagai Area 51, dipilih karena kerahasiaannya yang ekstrem dan landasan pacu alami di dasar danau kering. Ini menandai awal mula operasi rahasia di situs tersebut.' },
+                '1989': { title: 'Pengakuan Bob Lazar (1989)', content: 'Bob Lazar tampil di televisi Las Vegas mengklaim sebagai fisikawan yang bekerja di S-4, sebuah fasilitas dekat Area 51. Dia mengklaim tugasnya adalah merekayasa balik teknologi pendorong dari sembilan piring terbang alien yang disimpan di sana. Klaimnya, meskipun tidak terbukti, secara dramatis meningkatkan ketenaran Area 51.' },
+                '2013': { title: 'Pengakuan Resmi CIA (2013)', content: 'Sebagai tanggapan atas permintaan Freedom of Information Act (FOIA), CIA merilis dokumen yang secara resmi mengakui keberadaan dan lokasi Area 51 untuk pertama kalinya. Dokumen tersebut mengonfirmasi perannya dalam pengembangan pesawat U-2 dan A-12 OXCART, tetapi tidak menyebutkan apa pun tentang alien atau UFO.' }
+            };
+            
+            const alienData = {
+                'grey': { title: 'BERKAS: THE GREYS [RAHASIA]', content: 'Status: Ditahan & Diteliti. Karakteristik: Tinggi sekitar 3-4 kaki, kepala besar berbentuk bohlam, tanpa rambut, mata hitam besar tanpa pupil. Komunikasi diduga bersifat telepati. Asal: Sistem bintang Zeta Reticuli. Tujuan di Bumi tidak diketahui, teori berkisar dari penelitian genetik hingga infiltrasi diam-diam. Sering dikaitkan dengan laporan penculikan untuk eksperimen hibrida.' },
+                'reptilian': { title: 'BERKAS: THE REPTILIANS [SANGAT RAHASIA]', content: 'Status: Infiltrasi Aktif. Karakteristik: Humanoid tinggi dengan ciri-ciri reptil seperti sisik, mata celah vertikal, dan kemampuan mengubah bentuk menjadi manusia. Dipercaya memiliki kekuatan fisik dan psikis yang superior. Asal: Konstelasi Draco. Tujuan diduga adalah kontrol total atas sumber daya Bumi dan perbudakan umat manusia. Teori mengklaim mereka telah menyusup ke tingkat tertinggi kekuasaan global.' },
+                'nordic': { title: 'BERKAS: THE NORDICS [WASPADA]', content: 'Status: Pengamat. Karakteristik: Secara fisik tidak dapat dibedakan dari manusia Skandinavia; tinggi, berambut pirang, bermata biru. Dianggap memiliki kemampuan psikis dan teknologi canggih. Asal: Gugus bintang Pleiades. Tujuan diyakini baik hati, berusaha membantu evolusi spiritual manusia dan memperingatkan tentang bahaya dari spesies agresif lain dan ancaman buatan manusia sendiri.' }
+            }
+
+            function openModal(title, content) {
+                modalTitle.textContent = title;
+                modalContent.textContent = content;
+                modal.classList.remove('hidden');
+                modalBackdrop.classList.remove('hidden');
+            }
+
+            function closeModal() {
+                modal.classList.add('hidden');
+                modalBackdrop.classList.add('hidden');
+            }
+            
+            document.querySelectorAll('.timeline-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const eventId = item.dataset.event;
+                    const data = timelineData[eventId];
+                    if (data) {
+                        openModal(data.title, data.content);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const alienId = card.dataset.alien;
+                    const data = alienData[alienId];
+                    if(data) {
+                        openModal(data.title, data.content);
+                    }
+                });
+            });
+
+            modalClose.addEventListener('click', closeModal);
+            modalBackdrop.addEventListener('click', closeModal);
+
+            const ctx = document.getElementById('sightingsChart').getContext('2d');
+            const sightingsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['1950s', '1960s', '1970s', '1980s', '1990s', '2000s', '2010s', '2020s'],
+                    datasets: [{
+                        label: 'Laporan Penampakan UFO di AS',
+                        data: [1430, 4978, 6634, 4991, 19349, 32179, 64903, 23412],
+                        backgroundColor: 'rgba(51, 61, 68, 0.2)',
+                        borderColor: '#333D44',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#C06C2E',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Jumlah Laporan'
+                            }
+                        },
+                        x: {
+                             title: {
+                                display: true,
+                                text: 'Dekade'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#333D44',
+                            titleFont: {
+                                family: 'Roboto Mono'
+                            },
+                            bodyFont: {
+                                family: 'Inter'
+                            },
+                            padding: 12,
+                            cornerRadius: 4,
+                            displayColors: false,
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
